@@ -87,6 +87,15 @@ def startBinaryAnalysis(manifestContainerPath: PurePosixPath, binaryName: str | 
     return proc.stdout.strip()
 
 
+def startExploitDevelopment(manifestContainerPath: PurePosixPath, binaryName: str | None) -> str:
+    pythonCode = (
+        "from scripts.exploit_development_agent import runExploitDevelopmentAgent; "
+        f"runExploitDevelopmentAgent({str(manifestContainerPath)!r}, {binaryName!r})"
+    )
+    proc = dockerExec(f"cd /workspace && python3 -c {quote(pythonCode)}")
+    return proc.stdout.strip()
+
+
 async def main() -> int:
     args = parseArgs()
     manifestPath = Path(args.manifest).expanduser().resolve()
@@ -126,10 +135,14 @@ async def main() -> int:
             resp = await client.post(loader_url, json={"filename": sourceHost.name})
         if resp.status_code != 200:
             raise SetupError(f"failed to notify loader: {resp.status_code} {resp.text}")
-        status("[5/5] Starting binary analysis")
+        status("[5/6] Starting binary analysis")
         analysisOutput = startBinaryAnalysis(manifestContainer, args.binary_name)
         if analysisOutput:
             print(analysisOutput)
+        status("[6/6] Starting exploit development")
+        exploitOutput = startExploitDevelopment(manifestContainer, args.binary_name)
+        if exploitOutput:
+            print(exploitOutput)
 
         status("Setup flow complete")
         summary = {
@@ -138,6 +151,8 @@ async def main() -> int:
             "copied_target_path": copiedTargetPath,
             "playground_path": str(PLAYGROUND_PATH),
             "binary_analysis_started": True,
+            "exploit_development_started": True,
+            "exploit_development_success": True,
         }
         print(json.dumps(summary))
         return 0

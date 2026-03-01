@@ -1,12 +1,13 @@
 # Setup Script
 
-Prepare the challenge playground inside the running `ctf-dev` container, then start binary analysis (recon + IDA MCP agent).
+Prepare the challenge playground, run binary analysis, then run exploit development.
 
 ## Required env vars
 
 - `OPENAI_KEY`
 - `MODEL`
 - `IDA_MCP_URL`
+- `PWNDBG_MCP_URL`
 
 ## Run
 
@@ -25,3 +26,7 @@ python3 scripts/setup_challenge.py \
 ## Output artifact
 
 `/workspace/playground/artifacts/binary_analysis.json`
+
+`/workspace/playground/artifacts/exploit.py`
+
+`/workspace/playground/artifacts/exploit_report.json`

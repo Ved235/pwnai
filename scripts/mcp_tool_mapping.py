@@ -34,6 +34,12 @@ def getAllowedToolSpecs(mapData: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return specs
 
 
+def getAllowedDbgToolSpecs(mapData: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    allowed = set(mapData.get("dbg_tools_allowed", []))
+    specs = {spec["name"]: spec for spec in mapData.get("dbg_tool_specs", []) if spec.get("name") in allowed}
+    return specs
+
+
 def makeListFuncsTool(rawTool: Any, spec: dict[str, Any]):
     from langchain_core.tools import StructuredTool
 
@@ -106,5 +112,36 @@ def prepareIdaToolsForOpenAI(
     if log is not None:
         toolNames = ", ".join(getattr(tool, "name", "unknown") for tool in prepared)
         log(f"[binary-analysis] allowed tools from map: {toolNames}")
+
+    return prepared
+
+
+def prepareDbgToolsForOpenAI(
+    model: Any,
+    rawTools: list[Any],
+    mapPath: Path = MAP_PATH,
+    log: Callable[[str], None] | None = None,
+) -> list[Any]:
+    mapData = loadMap(mapPath)
+    allowedOrder = list(mapData.get("dbg_tools_allowed", []))
+    specs = getAllowedDbgToolSpecs(mapData)
+    rawByName = {getattr(tool, "name", ""): tool for tool in rawTools}
+
+    prepared: list[Any] = []
+    for name in allowedOrder:
+        rawTool = rawByName.get(name)
+        if rawTool is None:
+            continue
+        spec = specs.get(name, {})
+        tool = makePayloadTool(rawTool, spec)
+        model.bind_tools([tool])
+        prepared.append(tool)
+
+    if not prepared:
+        raise RuntimeError("No debugger MCP tools could be prepared from mcp-map.json.")
+
+    if log is not None:
+        toolNames = ", ".join(getattr(tool, "name", "unknown") for tool in prepared)
+        log(f"[exploit-debugger] allowed tools from map: {toolNames}")
 
     return prepared
