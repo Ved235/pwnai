@@ -9,7 +9,7 @@ from typing import Any, Callable
 
 from pydantic import BaseModel, Field
 
-MAP_PATH = Path(__file__).with_name("mcp-map.json")
+MAP_PATH = Path(__file__).parent.parent / "mcp-map.json"
 
 
 class ListFuncsArgs(BaseModel):
