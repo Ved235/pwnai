@@ -78,6 +78,24 @@ def resolveSource(repoRoot: Path, sourceFromManifest: str) -> tuple[Path, Path]:
     return sourceHost, sourceRel
 
 
+def isExecutableElf(path: Path) -> bool:
+    if not path.is_file() or not os.access(path, os.X_OK):
+        return False
+    with path.open("rb") as handle:
+        return handle.read(4) == b"\x7fELF"
+
+
+def resolveBinaryNameForLoader(sourceHost: Path, binaryNameArg: str | None) -> str:
+    if binaryNameArg:
+        return binaryNameArg
+    if sourceHost.is_file():
+        return sourceHost.name
+    candidates = [p.name for p in sourceHost.rglob("*") if isExecutableElf(p)]
+    if len(candidates) == 1:
+        return candidates[0]
+    raise SetupError("unable to infer binary name from source directory, pass --binary-name")
+
+
 def startBinaryAnalysis(manifestContainerPath: PurePosixPath, binaryName: str | None) -> str:
     pythonCode = (
         "from scripts.binary_analysis_agent import runBinaryAnalysisAgent; "
@@ -107,6 +125,7 @@ async def main() -> int:
 
         status("[2/5] Resolving source and manifest paths")
         sourceHost, sourceRel = resolveSource(repoRoot, sourceFromManifest)
+        binaryNameForLoader = resolveBinaryNameForLoader(sourceHost, args.binary_name)
         manifestRel = resolveRepoPath(repoRoot, manifestPath)
         sourceContainer = WORKSPACE_IN_CONTAINER / PurePosixPath(sourceRel.as_posix())
         manifestContainer = WORKSPACE_IN_CONTAINER / PurePosixPath(manifestRel.as_posix())
@@ -133,7 +152,7 @@ async def main() -> int:
         dockerExec(setupCmd)
         loader_url = os.environ.get("SETUP_URL").strip()
         async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.post(loader_url, json={"filename": sourceHost.name})
+            resp = await client.post(loader_url, json={"filename": binaryNameForLoader})
         if resp.status_code != 200:
             raise SetupError(f"failed to notify loader: {resp.status_code} {resp.text}")
         status("[5/6] Starting binary analysis")

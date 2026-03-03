@@ -4,6 +4,6 @@
   "category": "pwn",
   "host": "192.168.1.9",
   "port": "8000",
-  "source": "challenges/roppity/rop",
+  "source": "/workspace/challenges/roppity",
   "flag_format": "flag{}"
 }
