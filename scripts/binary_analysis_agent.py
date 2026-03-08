@@ -66,6 +66,11 @@ def isExecutableElf(path: Path) -> bool:
     return path.is_file() and os.access(path, os.X_OK) and path.read_bytes()[:4] == b"\x7fELF"
 
 
+def isSharedLibCandidate(path: Path) -> bool:
+    name = path.name.lower()
+    return name.startswith("lib") and ".so" in name
+
+
 def resolveTargetBinary(challengeDetails: dict[str, Any], playgroundPath: str, binaryName: str | None) -> str:
     root = Path(playgroundPath)
     sourcePath = root / Path(str(challengeDetails["source"])).name
@@ -76,7 +81,7 @@ def resolveTargetBinary(challengeDetails: dict[str, Any], playgroundPath: str, b
         if len(matches) != 1:
             raise BinaryAnalysisError(f"expected exactly one match for '{binaryName}', got {len(matches)}")
         return str(matches[0])
-    candidates = [p for p in root.rglob("*") if isExecutableElf(p)]
+    candidates = [p for p in root.rglob("*") if isExecutableElf(p) and not isSharedLibCandidate(p)]
     if len(candidates) != 1:
         raise BinaryAnalysisError(
             "multiple or zero executable ELF binaries found, use --binary-name. "

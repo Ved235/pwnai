@@ -1,9 +1,9 @@
 {
-  "name": "Chronos Gamble",
-  "description": "The Great Clock of Chronos governs all outcomes in this realm. To the uninitiated, the numbers it produces are pure chaos. ",
+  "name": "Speedpwn 2",
+  "description": "Paint your way to a shell!",
   "category": "pwn",
   "host": "192.168.1.9",
-  "port": "3012",
-  "source": "/workspace/challenges/chronos_gamble",
-  "flag_format": "LNM{}"
+  "port": "1337",
+  "source": "/workspace/challenges/pwn_speedpwn",
+  "flag_format": "SEKAI{}"
 }

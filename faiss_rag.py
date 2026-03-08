@@ -6,6 +6,7 @@ from pathlib import Path
 import faiss
 import numpy as np
 from openai import OpenAI
+from dotenv import load_dotenv
 
 INDEX_FILE = "index.faiss"
 META_FILE = "metadata.json"
@@ -13,7 +14,9 @@ META_FILE = "metadata.json"
 MODEL = "text-embedding-3-small"
 
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+load_dotenv()
+
+client = OpenAI(api_key=os.environ["OPENAI_KEY"])
 
 
 def read_documents(folder):

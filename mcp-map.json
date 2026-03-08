@@ -12,9 +12,8 @@
     "xrefs_to_field"
   ],
   "dbg_tools_allowed": [
-    "execute_command",
-    "read_from_process",
-    "send_to_process"
+    "run_command",
+    "interrupt"
   ],
   "ida_allowed_missing_from_server": [],
   "dbg_allowed_missing_from_server": [],
@@ -568,31 +567,18 @@
   ],
   "dbg_tool_specs": [
     {
-      "name": "load_executable",
-      "description": "Load an executable file into GDB and set up PTY for process I/O.\n\nArgs:\n    executable_path: Path to the executable file\n    args: Command-line arguments for the program\n\nReturns:\n    TOON-formatted GDB responses",
+      "name": "setup",
+      "description": "Set the active binary in gdb/pwndbg using `file <path>`.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "executable_path": {
+          "path": {
+            "title": "Path",
             "type": "string"
-          },
-          "args": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
           }
         },
         "required": [
-          "executable_path"
+          "path"
         ]
       },
       "outputSchema": {
@@ -600,289 +586,43 @@
       }
     },
     {
-      "name": "debug_control",
-      "description": "Control tracee running state by step, next or finish, etc. Use this prior\nthan running individual execute_command to separate state control and actual command.\n\nArgs:\n    action: Any of 'c', 'n', 'r', 's', 'kill', 'fin', 'ni', 'si', 'entry', 'start',\n    'sstart', 'nextcall', 'nextjmp', 'nextret', 'nextsyscall', 'nextproginstr',\n    'stepover', 'stepret', 'strpsyscall', 'stepuntilasm', 'xuntil'\nReturns:\n    GDB responses or null if GDB is waiting tracee",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "action": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "action"
-        ]
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "send_to_process",
-      "description": "Send data to the target process through PTY in raw mode.\n\nArgs:\n    data: String to send to the process\n\nReturns:\n    how many bytes sent if successfully sent",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "data"
-        ]
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "eval_to_send_to_process",
-      "description": "Given `statement`, evaluate it in Python and `bytes()` it,\nthen send to process. This tool is not that safe.\ne.g. eval_to_send_to_process('flat(0x333, 0x222) + p64(1)')\n\nArgs:\n    statement: Python statement to evalute. pwntools have already imported.\n\nReturns:\n    the evaluate result if successfully sent, or the error if not able\n    to `bytes()` it",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "statement": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "statement"
-        ]
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "read_from_process",
-      "description": "Read data from the target process through PTY.\n\nArgs:\n    size: Maximum bytes to read\n    timeout: Read timeout in seconds\n\nReturns:\n    TOON-formatted result with data read from process;\n    raw str decoded from process if all bytes are printable,\n    hexdump result if unprintable bytes found.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "size": {
-            "default": 1024,
-            "type": "integer"
-          },
-          "timeout": {
-            "default": 5,
-            "type": "integer"
-          }
-        },
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "interrupt_process",
-      "description": "Interrupt target process through PTY. Equivalent to press Ctrl-C, Ctrl-Z or Ctrl-D\n\nArgs:\n    ctrl: Default is \"Ctrl-C\". Any of \"C-c\", \"C-z\" or \"C-d\"",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "ctrl": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          }
-        },
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "pwndbg_status",
-      "description": "Return GDB status and additional GDB messages if some new messages\navailable since last execute\n\nReturns:\n    TOON-formatted GDB status and GDB responses if available",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "pwndbg_hard_reset",
-      "description": "Hard reset pwndbg status by reset gdb controller. If interrupt can not stop process,\ncall this to restart debug session.\n\nReturns:\n    New gdb message",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "list_pwndbg_commands",
-      "description": "If you don't know all pwndbg commands, run this tool first to\nexplore pwndbg commands usages. If you find any interesting command not\nin tool list, or you want to set more args, please invoke the command\nby `execute_command` directly.\n\nReturn:\n    pwndbg commands list or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "telescope",
-      "description": "Examine given address `statement` with `count` words,\ndereference pointers if valid.\n\nArgs:\n    statement: a raw address or a statement can be eval'ed to address\n    count: words to deref\n\nReturns:\n    derefing address block results or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "statement": {
-            "type": "string"
-          },
-          "count": {
-            "default": 10,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "statement"
-        ]
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "context",
-      "description": "Display pwndbg section with `subsection` or leave it to null\nto display default context defined by `context-sections`.\n\nArgs:\n    subsection: null to display default context, or one of 'regs', 'disasm',\n    'code', 'stack', 'backtrace', 'ghidra', 'args', 'threads', 'heap_tracker',\n    'expressions', 'last_signal'\nReturns:\n    program context or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "subsection": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          }
-        },
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "heap",
-      "description": "Examine heap with pwndbg\n\nReturns:\n    overall heap status or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "bins",
-      "description": "Examine available chunks with pwndbg command bins\n\nReturns:\n    overall bins status or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "backtrace",
-      "description": "Display program function backtrace\n\nReturns:\n    gdb backtrace view or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "procinfo",
-      "description": "Display current process infomation\n\nReturns:\n    process info including pid, opened fd, etc or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "vmmap",
-      "description": "Display current program memory layout or pages match pattern\n\nArgs:\n    pattern: match the name of page, e.g. libc\nReturns:\n    maps layout or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "pattern": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          }
-        },
-        "required": []
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "xinfo",
-      "description": "Shows offsets of the specified address from various useful locations\n\nArgs:\n    statement: address or statement that can be eval'ed to address\nReturns:\n    Related address offsets or null if pwndbg waiting",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "statement": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "statement"
-        ]
-      },
-      "outputSchema": {
-        "type": "object"
-      }
-    },
-    {
-      "name": "execute_command",
-      "description": "Execute an arbitrary GDB command.\n\nArgs:\n    command: GDB command to execute, use ` ` to split args\n\nReturns:\n    TOON-formatted GDB responses or null if GDB is waiting tracee",
+      "name": "run_command",
+      "description": "Run an arbitrary gdb/pwndbg command and return full output.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "command": {
+            "title": "Command",
             "type": "string"
           }
         },
         "required": [
           "command"
         ]
+      },
+      "outputSchema": {
+        "type": "object"
+      }
+    },
+    {
+      "name": "interrupt",
+      "description": "Interrupt the active inferior/session (Ctrl-C semantics).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object"
+      }
+    },
+    {
+      "name": "hardreset",
+      "description": "Hard reset gdb/pwndbg state, clearing loaded file and debugger state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
       },
       "outputSchema": {
         "type": "object"

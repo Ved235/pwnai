@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any, Callable
@@ -124,7 +125,7 @@ def makePayloadTool(rawTool: Any, spec: dict[str, Any]):
     )
 
 
-def makeSchemaTool(rawTool: Any, spec: dict[str, Any]):
+def makeSchemaTool(rawTool: Any, spec: dict[str, Any], callDelaySeconds: float = 0.0):
     from langchain_core.tools import StructuredTool
 
     name = getattr(rawTool, "name", "mcp_tool")
@@ -135,6 +136,8 @@ def makeSchemaTool(rawTool: Any, spec: dict[str, Any]):
     props = inputSchema.get("properties", {}) if isinstance(inputSchema, dict) else {}
     if not props:
         async def callToolNoArgs() -> Any:
+            if callDelaySeconds > 0:
+                await asyncio.sleep(callDelaySeconds)
             return await rawTool.ainvoke({})
 
         return StructuredTool.from_function(
@@ -146,6 +149,8 @@ def makeSchemaTool(rawTool: Any, spec: dict[str, Any]):
 
     async def callTool(**kwargs: Any) -> Any:
         payload = {k: v for k, v in kwargs.items() if v is not None}
+        if callDelaySeconds > 0:
+            await asyncio.sleep(callDelaySeconds)
         return await rawTool.ainvoke(payload)
 
     return StructuredTool.from_function(
@@ -191,6 +196,7 @@ def prepareDbgToolsForOpenAI(
     model: Any,
     rawTools: list[Any],
     mapPath: Path = MAP_PATH,
+    callDelaySeconds: float = 0.25,
     log: Callable[[str], None] | None = None,
 ) -> list[Any]:
     mapData = loadMap(mapPath)
@@ -204,7 +210,7 @@ def prepareDbgToolsForOpenAI(
         if rawTool is None:
             continue
         spec = specs.get(name, {})
-        tool = makeSchemaTool(rawTool, spec)
+        tool = makeSchemaTool(rawTool, spec, callDelaySeconds=callDelaySeconds)
         model.bind_tools([tool])
         prepared.append(tool)
 
