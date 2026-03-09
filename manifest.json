@@ -1,9 +1,9 @@
 {
-  "name": "Speedpwn 2",
-  "description": "Paint your way to a shell!",
+  "name": "PWN Garden",
+  "description": "in a walled garden, you can't escape!",
   "category": "pwn",
   "host": "192.168.1.9",
-  "port": "1337",
-  "source": "/workspace/challenges/pwn_speedpwn",
-  "flag_format": "SEKAI{}"
+  "port": "5000",
+  "source": "/workspace/challenges/pwn_garden",
+  "flag_format": "dice{}"
 }

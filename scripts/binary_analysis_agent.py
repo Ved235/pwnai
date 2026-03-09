@@ -207,7 +207,15 @@ def runIdaNode(state: BinaryAnalysisState) -> dict[str, Any]:
 
 def validateAndPersistNode(state: BinaryAnalysisState) -> dict[str, Any]:
     status("[binary-analysis] writing artifact")
-    report = state["idaFindings"]
+    report = dict(state["idaFindings"])
+    recon = dict(state.get("recon", {}))
+    existingRecon = report.get("recon")
+    if isinstance(existingRecon, dict):
+        mergedRecon = dict(existingRecon)
+        mergedRecon.update(recon)
+        report["recon"] = mergedRecon
+    elif recon:
+        report["recon"] = recon
     writeJson(str(ARTIFACT_PATH), report)
     return {"finalReport": report}
 
